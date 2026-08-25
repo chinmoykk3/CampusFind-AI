@@ -4,9 +4,21 @@ const env = require("./config/env");
 
 const { connectDatabase, disconnectDatabase } = require("./config/database");
 
+const {
+  initializeDatabase,
+} = require("./database/initializeDatabase");
+
+const {
+  seedDatabase,
+} = require("./database/seedDatabase");
+
 const startServer = async () => {
   try {
     await connectDatabase();
+
+    await initializeDatabase();
+
+    await seedDatabase();
 
     const server = app.listen(env.port, () => {
       console.log("======================================");
