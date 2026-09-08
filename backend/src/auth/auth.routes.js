@@ -2,6 +2,7 @@ const express = require("express");
 
 const {
     register,
+    verifyOtp,
     login,
     logout,
     getCurrentUser,
@@ -12,7 +13,7 @@ const authenticate = require("../middleware/authenticate");
 const router = express.Router();
 
 router.post("/register", register);
-
+router.post("/verify-otp", verifyOtp);
 router.post("/login", login);
 
 router.post("/logout", logout);

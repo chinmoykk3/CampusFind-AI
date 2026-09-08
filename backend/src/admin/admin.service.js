@@ -12,37 +12,48 @@ const getDashboardStats = async () => {
         resolvedReports,
         potentialMatches,
         confirmedMatches,
+        rejectedMatches,
+        reportsByCategory,
+        reportsByLocation,
+        reportsByTime
     ] = await Promise.all([
         User.countDocuments(),
-
-        User.countDocuments({
-            isActive: true,
-        }),
-
-        Report.countDocuments({
-            type: "lost",
-        }),
-
-        Report.countDocuments({
-            type: "found",
-        }),
-
-        Report.countDocuments({
-            status: "active",
-        }),
-
-        Report.countDocuments({
-            status: "resolved",
-        }),
-
-        Match.countDocuments({
-            status: "potential",
-        }),
-
-        Match.countDocuments({
-            status: "confirmed",
-        }),
+        User.countDocuments({ isActive: true }),
+        Report.countDocuments({ type: "lost" }),
+        Report.countDocuments({ type: "found" }),
+        Report.countDocuments({ status: "active" }),
+        Report.countDocuments({ status: "resolved" }),
+        Match.countDocuments({ status: "potential" }),
+        Match.countDocuments({ status: "confirmed" }),
+        Match.countDocuments({ status: "rejected" }),
+        Report.aggregate([
+            { $lookup: { from: 'categories', localField: 'categoryId', foreignField: '_id', as: 'category' } },
+            { $unwind: '$category' },
+            { $group: { _id: '$category.name', count: { $sum: 1 } } },
+            { $project: { name: '$_id', count: 1, _id: 0 } }
+        ]),
+        Report.aggregate([
+            { $lookup: { from: 'locations', localField: 'locationId', foreignField: '_id', as: 'location' } },
+            { $unwind: '$location' },
+            { $group: { _id: '$location.name', count: { $sum: 1 } } },
+            { $project: { name: '$_id', count: 1, _id: 0 } }
+        ]),
+        Report.aggregate([
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } },
+            { $limit: 14 },
+            { $project: { date: '$_id', count: 1, _id: 0 } }
+        ])
     ]);
+
+    const totalMatches = potentialMatches + confirmedMatches + rejectedMatches;
+    const matchSuccessRate = totalMatches > 0 ? ((confirmedMatches / totalMatches) * 100).toFixed(1) : 0;
+    const recoveryRate = totalLostReports > 0 ? ((resolvedReports / totalLostReports) * 100).toFixed(1) : 0;
 
     return {
         users: {
@@ -50,18 +61,22 @@ const getDashboardStats = async () => {
             active: activeUsers,
             inactive: totalUsers - activeUsers,
         },
-
         reports: {
             total: totalLostReports + totalFoundReports,
             lost: totalLostReports,
             found: totalFoundReports,
             active: activeReports,
             resolved: resolvedReports,
+            recoveryRate: parseFloat(recoveryRate),
+            byCategory: reportsByCategory,
+            byLocation: reportsByLocation,
+            byTime: reportsByTime
         },
-
         matches: {
             potential: potentialMatches,
             confirmed: confirmedMatches,
+            rejected: rejectedMatches,
+            successRate: parseFloat(matchSuccessRate)
         },
     };
 };

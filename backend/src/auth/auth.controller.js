@@ -1,63 +1,35 @@
-const {
-    registerStudent,
-    loginUser,
-} = require("./auth.service");
+const { registerStudent, loginUser, verifyEmailOtp } = require("./auth.service");
 
 const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite:
-        process.env.NODE_ENV === "production"
-            ? "none"
-            : "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
 const register = async (req, res, next) => {
     try {
-        const { name, email, password } =
-            req.body;
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) return res.status(400).json({ success: false, message: "Name, email and password are required." });
+        if (password.length < 8) return res.status(400).json({ success: false, message: "Password must contain at least 8 characters." });
 
-        if (!name || !email || !password) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Name, email and password are required.",
-            });
-        }
+        const result = await registerStudent({ name, email, password });
+        res.status(200).json({ success: true, message: result.message, email: result.email });
+    } catch (error) { next(error); }
+};
 
-        if (password.length < 8) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Password must contain at least 8 characters.",
-            });
-        }
+const verifyOtp = async (req, res, next) => {
+    try {
+        const { email, otp } = req.body;
+        if (!email || !otp) return res.status(400).json({ success: false, message: "Email and OTP are required." });
 
-        const result = await registerStudent({
-            name,
-            email,
-            password,
+        const result = await verifyEmailOtp({ email, otp });
+        res.cookie("campusfind_token", result.token, cookieOptions).status(200).json({
+            success: true,
+            message: "Email verified successfully.",
+            data: { user: result.user }
         });
-
-        res
-            .cookie(
-                "campusfind_token",
-                result.token,
-                cookieOptions
-            )
-            .status(201)
-            .json({
-                success: true,
-                message:
-                    "Student account created successfully.",
-                data: {
-                    user: result.user,
-                },
-            });
-    } catch (error) {
-        next(error);
-    }
+    } catch (error) { next(error); }
 };
 
 const login = async (req, res, next) => {
@@ -132,6 +104,7 @@ const getCurrentUser = async (req, res) => {
 
 module.exports = {
     register,
+    verifyOtp,
     login,
     logout,
     getCurrentUser,

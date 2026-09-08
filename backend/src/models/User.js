@@ -19,6 +19,14 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
 
+    username: {
+      type: String,
+      unique: true,
+      sparse: true, // sparse allows nulls but guarantees uniqueness if it exists
+      trim: true,
+      index: true,
+    },
+
     passwordHash: {
       type: String,
       required: true,
@@ -36,6 +44,22 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
       index: true,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    verificationOtp: {
+      type: String,
+      default: null,
+    },
+
+    otpExpiresAt: {
+      type: Date,
+      default: null,
     },
 
     profileImage: {

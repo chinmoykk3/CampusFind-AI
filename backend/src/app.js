@@ -8,12 +8,16 @@ const env = require("./config/env");
 const authRoutes = require("./auth/auth.routes");
 const adminRoutes = require("./admin/admin.routes");
 const adminUserRoutes = require("./admin/admin.user.routes");
-
-
+const reportRoutes = require("./reports/report.routes");
+const matchingRoutes = require("./matching/matching.routes");
+const categoryRoutes = require("./categories/category.routes");
+const locationRoutes = require("./locations/location.routes");
+const notificationRoutes = require("./notifications/notification.routes");
 const app = express();
 
 // ========================================
 // SECURITY
+
 // ========================================
 
 app.use(helmet());
@@ -43,6 +47,12 @@ app.use(
 );
 
 app.use(cookieParser());
+
+// ========================================
+// STATIC FILES
+// ========================================
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
 
 // ========================================
 // RATE LIMITING
@@ -85,7 +95,11 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/users", adminUserRoutes);
-
+app.use("/api/reports", reportRoutes);
+app.use("/api/matching", matchingRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/locations", locationRoutes);
+app.use("/api/notifications", notificationRoutes);
 // ========================================
 // 404
 // ========================================
