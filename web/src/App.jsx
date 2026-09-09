@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Matches from './pages/Matches';
 import MyReports from './pages/MyReports';
+import PublicWall from './pages/PublicWall';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageUsers from './pages/ManageUsers';
 import ManageReports from './pages/ManageReports';
@@ -39,6 +40,7 @@ function App() {
               <Route path="/report/new" element={<ReportItem />} />
               <Route path="/my-reports" element={<MyReports />} />
               <Route path="/matches" element={<Matches />} />
+              <Route path="/wall" element={<PublicWall />} />
             </Route>
           </Route>
 
