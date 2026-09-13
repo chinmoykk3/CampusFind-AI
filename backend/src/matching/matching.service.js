@@ -46,6 +46,23 @@ const textSimilarityAsync = async (textA = "", textB = "") => {
     }
 };
 
+const imageSimilarityAsync = async (url1 = "", url2 = "") => {
+    if (!url1 || !url2) return 0;
+    try {
+        const response = await fetch("http://localhost:8000/api/v1/similarity/image-urls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url1: String(url1), url2: String(url2) })
+        });
+        if (!response.ok) return 0;
+        const data = await response.json();
+        return data.similarity_score;
+    } catch (err) {
+        console.error("AI Image Service Error:", err.message);
+        return 0;
+    }
+};
+
 const fallbackTextSimilarity = (
     textA = "",
     textB = ""
@@ -279,22 +296,28 @@ const calculateMatch = async (
     );
 
     /*
-     * Image score is intentionally 0
-     * until image processing is implemented.
+     * Image score calculation via ResNet50 AI service.
      */
-    const imageScore = 0;
+    let imageScore = 0;
+    if (lostReport.images?.length > 0 && foundReport.images?.length > 0) {
+        imageScore = await imageSimilarityAsync(lostReport.images[0].url, foundReport.images[0].url);
+    }
 
-    /*
-     * Baseline overall score.
-     *
-     * Image is excluded from the current
-     * baseline because no image AI exists yet.
-     */
-    const overall =
-        textScore * 0.45 +
-        categoryScore * 0.25 +
-        locationScore * 0.15 +
-        timeScore * 0.15;
+    let overall = 0;
+    if (lostReport.images?.length > 0 && foundReport.images?.length > 0) {
+        overall =
+            textScore * 0.30 +
+            imageScore * 0.35 +
+            categoryScore * 0.20 +
+            locationScore * 0.10 +
+            timeScore * 0.05;
+    } else {
+        overall =
+            textScore * 0.45 +
+            categoryScore * 0.25 +
+            locationScore * 0.15 +
+            timeScore * 0.15;
+    }
 
     const reasons = [];
 
@@ -307,6 +330,12 @@ const calculateMatch = async (
     if (locationScore === 1) {
         reasons.push(
             "Both reports reference the same location."
+        );
+    }
+
+    if (imageScore >= 0.6) {
+        reasons.push(
+            "Visual similarity engine detected strong visual overlap (AI ResNet50)."
         );
     }
 

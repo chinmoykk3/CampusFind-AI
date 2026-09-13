@@ -26,6 +26,7 @@ const createReport = async ({
     locationId,
     date,
     time,
+    images = [],   // ← accept uploaded image metadata from the controller
 }) => {
     if (!["lost", "found"].includes(type)) {
         const error = new Error(
@@ -82,7 +83,7 @@ const createReport = async ({
         locationId,
         date,
         time: time || null,
-        images: [],
+        images: Array.isArray(images) ? images : [],
         status: "active",
     });
 

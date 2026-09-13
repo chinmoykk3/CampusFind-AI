@@ -35,8 +35,8 @@ const getUserMatches = async (req, res, next) => {
                 { foundReportId: { $in: reportIds } }
             ]
         })
-            .populate("lostReportId")
-            .populate("foundReportId")
+            .populate({ path: "lostReportId", populate: { path: "userId", select: "name email" } })
+            .populate({ path: "foundReportId", populate: { path: "userId", select: "name email" } })
             .sort({ "scores.overall": -1 })
             .lean();
 
@@ -59,6 +59,8 @@ const getAllMatches = async (req, res, next) => {
     }
 };
 
+const { sendMatchHandoffEmail } = require("../utils/mailer");
+
 const reviewMatch = async (req, res, next) => {
     try {
         const { status } = req.body;
@@ -70,9 +72,27 @@ const reviewMatch = async (req, res, next) => {
             req.params.id,
             { status },
             { new: true }
-        ).populate("lostReportId foundReportId");
+        )
+            .populate({ path: "lostReportId", populate: { path: "userId", select: "name email" } })
+            .populate({ path: "foundReportId", populate: { path: "userId", select: "name email" } });
 
         if (!match) return res.status(404).json({ success: false, message: "Match not found" });
+
+        // If confirmed, trigger the mutual handshake email!
+        if (status === "confirmed") {
+            const lostData = {
+                itemName: match.lostReportId?.itemName,
+                email: match.lostReportId?.userId?.email,
+            };
+            const foundData = {
+                itemName: match.foundReportId?.itemName,
+                email: match.foundReportId?.userId?.email,
+            };
+
+            if (lostData.email && foundData.email) {
+                sendMatchHandoffEmail(lostData, foundData).catch(console.error);
+            }
+        }
 
         res.status(200).json({ success: true, data: match });
     } catch (error) {

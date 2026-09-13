@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "create-admin": "node src/database/createAdmin.js"
+    "create-admin": "node src/database/createAdmin.js",
+    "test": "cross-env NODE_ENV=test jest --workerIdleMemoryLimit=512MB --detectOpenHandles"
   },
   "keywords": [
     "campusfind",
@@ -31,6 +32,10 @@
     "nodemailer": "^10.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "cross-env": "^10.1.0",
+    "jest": "^30.5.1",
+    "mongodb-memory-server": "^11.2.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.2.2"
   }
 }

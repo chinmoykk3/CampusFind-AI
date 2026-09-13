@@ -45,8 +45,16 @@ const { logAdminAction } = require("../utils/audit");
 
 router.get("/admin", authenticate, authorize("admin"), async (req, res, next) => {
     try {
-        const notifications = await Notification.find().sort({ createdAt: -1 }).limit(100).populate("userId", "name email").lean();
+        const notifications = await Notification.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(100).populate("userId", "name email").lean();
         res.status(200).json({ success: true, data: notifications });
+    } catch (error) { next(error); }
+});
+
+// Lightweight unread count for the sidebar badge
+router.get("/admin/unread-count", authenticate, authorize("admin"), async (req, res, next) => {
+    try {
+        const count = await Notification.countDocuments({ userId: req.user.id, isRead: false });
+        res.status(200).json({ success: true, count });
     } catch (error) { next(error); }
 });
 

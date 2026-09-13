@@ -86,5 +86,50 @@ export const useAuthStore = create((set, get) => ({
                 isLoading: false
             });
         }
-    }
+    },
+
+    forgotPassword: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.post("/auth/forgot-password", { email });
+            set({ isLoading: false });
+            return response.data;
+        } catch (error) {
+            set({
+                isLoading: false,
+                error: error.response?.data?.message || "Failed to send OTP"
+            });
+            throw error;
+        }
+    },
+
+    verifyResetOtp: async (email, otp) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.post("/auth/verify-reset-otp", { email, otp });
+            set({ isLoading: false });
+            return response.data; // contains resetToken
+        } catch (error) {
+            set({
+                isLoading: false,
+                error: error.response?.data?.message || "OTP verification failed"
+            });
+            throw error;
+        }
+    },
+
+    resetPassword: async (resetToken, newPassword) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await api.post("/auth/reset-password", { resetToken, newPassword });
+            set({ isLoading: false });
+            return response.data;
+        } catch (error) {
+            set({
+                isLoading: false,
+                error: error.response?.data?.message || "Password reset failed"
+            });
+            throw error;
+        }
+    },
 }));

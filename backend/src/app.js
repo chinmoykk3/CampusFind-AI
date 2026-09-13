@@ -22,9 +22,22 @@ const app = express();
 
 app.use(helmet());
 
+const allowedOrigins = [
+  env.clientUrl,
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+
 app.use(
   cors({
-    origin: env.clientUrl,
+    origin: (origin, callback) => {
+      // allow requests with no origin (e.g. curl, Postman, mobile apps)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: origin '${origin}' is not allowed`));
+      }
+    },
     credentials: true,
   })
 );
@@ -52,7 +65,7 @@ app.use(cookieParser());
 // STATIC FILES
 // ========================================
 const path = require("path");
-app.use("/uploads", express.static(path.join(__dirname, "../../uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // ========================================
 // RATE LIMITING

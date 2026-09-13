@@ -1,31 +1,42 @@
 @import "tailwindcss";
 
 @theme {
-  --color-indigo-400: #818cf8;
-  --color-indigo-500: #6366f1;
-  --color-indigo-600: #4f46e5;
-  --color-indigo-700: #4338ca;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  --font-sans: "Playfair Display", "Outfit", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+  /* Simple, Refined & Professional Palette (shadcn/ui style neutral) */
+  --color-background: #FAFAFA;
+  /* Very soft, clean off-white */
+  --color-foreground: #09090B;
+  /* Deep zinc / almost black */
+
+  --color-primary-50: #F4F4F5;
+  --color-primary-100: #E4E4E7;
+  --color-primary-500: #71717A;
+  --color-primary-600: #27272A;
+  --color-primary-700: #18181B;
+  /* Primary: Premium Black/Zinc */
+  --color-primary-900: #09090B;
+
+  --color-accent: #2563EB;
+  /* Used sparingly for links/focus */
 }
 
 @layer base {
   :root {
-    --background: #000000;
-    --foreground: #ffffff;
+    --color-background: #FAFAFA;
+    --color-foreground: #09090B;
   }
-}
 
-@layer base {
   body {
-    background-color: #050505;
-    color: #ffffff;
     font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    line-height: 1.6;
+    letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+    background-image: none;
+    /* Absolutely clean, no patterns or gradients */
   }
 
   h1,
@@ -34,92 +45,192 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-serif);
+    font-weight: 600;
+    /* Refined semibold instead of aggressive bold */
     letter-spacing: -0.02em;
+    color: #09090B;
   }
 }
 
 /* 
-===============================================
-  ULTRA PREMIUM AESTHETICS - "NOT CHEAP"
-===============================================
-*/
+ * REFINED & PROFESSIONAL
+ * Minimalist, high contrast, typography-first, highly trusted.
+ */
 
-.app-bg {
-  background: radial-gradient(120% 100% at 50% -20%, #1e1a38 0%, #050505 100%);
-  background-attachment: fixed;
-  min-height: 100vh;
+* {
+  border-radius: 6px;
+  /* Structured, mature geometry */
 }
 
-.dark .app-bg {
-  background: radial-gradient(120% 100% at 50% -20%, #1e1a38 0%, #050505 100%);
+/* Base Text Colors */
+.text-slate-900,
+.text-slate-800,
+.text-slate-700,
+.text-slate-600 {
+  color: #09090B !important;
 }
 
-.premium-card {
-  position: relative;
-  background: rgba(20, 20, 25, 0.4);
-  border-radius: 24px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-    0 20px 40px -10px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+.text-slate-500,
+.text-slate-400 {
+  color: #71717A !important;
+  /* Soft but highly legible gray */
 }
 
-.premium-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 24px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
-  pointer-events: none;
+/* Global Background Override */
+.bg-slate-50 {
+  background-color: #FAFAFA !important;
 }
 
+/* Core Structural Cards */
+.premium-card,
+.bg-white {
+  background: #FFFFFF !important;
+  border: 1px solid #E4E4E7 !important;
+  /* Extremely thin, refined border */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03) !important;
+  border-radius: 8px !important;
+  color: #09090B !important;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+/* Very subtle hover lift */
 .premium-card:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
-    0 30px 50px -10px rgba(0, 0, 0, 0.6),
-    0 0 20px rgba(120, 110, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03) !important;
+  border-color: #D4D4D8 !important;
+  transform: none !important;
+  /* No bouncy animations on professional sites */
 }
 
-.premium-text-gradient {
-  background: linear-gradient(180deg, #FFFFFF 0%, #A0A0B0 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Top Navigation Bar */
+header.bg-white,
+.sticky {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-bottom: 1px solid #E4E4E7 !important;
+  box-shadow: none !important;
 }
 
-.premium-button {
-  background: linear-gradient(180deg, #38345c 0%, #1c1a2e 100%);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 4px 10px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  border-radius: 9999px;
-  transition: all 0.3s ease;
+/* Form Primitives */
+input,
+select,
+textarea {
+  background: #FFFFFF !important;
+  border: 1px solid #E4E4E7 !important;
+  color: #09090B !important;
+  border-radius: 6px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
-.premium-button:hover {
-  background: linear-gradient(180deg, #4c467a 0%, #292642 100%);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 6px 15px rgba(0, 0, 0, 0.4);
-  transform: translateY(-1px);
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: #18181B !important;
+  /* Professional dark focus ring */
+  box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.1) !important;
+  transform: none !important;
 }
 
-.floating-nav {
-  background: rgba(10, 10, 15, 0.6);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+/* Primary Interaction Boundaries */
+button,
+a.premium-button,
+a.secondary-button {
+  transition: all 0.15s ease !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  /* Removes uppercase SHOUTING */
+  cursor: pointer !important;
+  box-shadow: none !important;
 }
 
-.bento-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 1.5rem;
+/* Simple, sleek dark primary buttons */
+a.premium-button,
+button.bg-primary-600 {
+  background: #18181B !important;
+  color: #FFFFFF !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+a.premium-button:hover:not(:disabled),
+button.bg-primary-600:hover:not(:disabled) {
+  background: #27272A !important;
+  color: #FFFFFF !important;
+  transform: none !important;
+}
+
+a.premium-button:active:not(:disabled),
+button.bg-primary-600:active:not(:disabled) {
+  transform: scale(0.98) !important;
+}
+
+/* Secondary Actions */
+a.secondary-button {
+  background: #FFFFFF !important;
+  color: #18181B !important;
+  border: 1px solid #E4E4E7 !important;
+}
+
+a.secondary-button:hover:not(:disabled) {
+  background: #F4F4F5 !important;
+  border-color: #D4D4D8 !important;
+  transform: none !important;
+}
+
+a.secondary-button:active:not(:disabled) {
+  transform: scale(0.98) !important;
+}
+
+/* Accessible Disabled States */
+button:disabled,
+a.premium-button:disabled,
+a.secondary-button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  background: #F4F4F5 !important;
+  color: #A1A1AA !important;
+  border-color: #E4E4E7 !important;
+}
+
+/* Badges / Accents */
+.bg-accent-mint,
+.bg-primary-50 {
+  background: #F4F4F5 !important;
+  color: #18181B !important;
+  border: 1px solid #E4E4E7 !important;
+  box-shadow: none !important;
+  font-weight: 500 !important;
+}
+
+/* Animations */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+  width: max-content;
+  display: flex;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
 }

@@ -14,6 +14,7 @@ const notificationSchema = new mongoose.Schema(
             enum: [
                 "potential_match",
                 "report_update",
+                "new_report",
                 "account_update",
                 "system",
             ],

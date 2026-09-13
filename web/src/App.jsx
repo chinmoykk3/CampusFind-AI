@@ -4,10 +4,12 @@ import Home from './pages/Home';
 import ReportItem from './pages/ReportItem';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Matches from './pages/Matches';
 import MyReports from './pages/MyReports';
 import PublicWall from './pages/PublicWall';
+import UserProfile from './pages/UserProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageUsers from './pages/ManageUsers';
 import ManageReports from './pages/ManageReports';
@@ -21,10 +23,17 @@ import { ProtectedRoute, AdminRoute } from './components/layout/ProtectedRoutes'
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import { Toaster } from 'react-hot-toast';
+import { useAuthStore } from './store/useAuthStore';
+import { useEffect } from 'react';
 
 function App() {
+  const { checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
   return (
-    <div className="min-h-screen app-bg transition-colors duration-300">
+    <div className="min-h-screen text-slate-900 transition-colors duration-300 font-sans">
       <BrowserRouter>
         <Routes>
           {/* Default App Layout wrapping Navbar */}
@@ -32,10 +41,12 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Protected Student Routes within User Layout */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<UserProfile />} />
               <Route path="/report/:type" element={<ReportItem />} />
               <Route path="/report/new" element={<ReportItem />} />
               <Route path="/my-reports" element={<MyReports />} />

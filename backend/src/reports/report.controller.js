@@ -10,6 +10,9 @@ const {
     generateMatchesForNewReport,
 } = require("../matching/matching.service");
 
+const Notification = require("../models/Notification");
+const User = require("../models/User");
+
 const create = async (
     req,
     res,
@@ -71,6 +74,24 @@ const create = async (
                 "Matching engine error:",
                 error.message
             );
+        }
+
+        // ── Notify all admins about the new case ──────────────────
+        try {
+            const admins = await User.find({ role: "admin", isActive: true }).select("_id").lean();
+            if (admins.length > 0) {
+                const notifications = admins.map((admin) => ({
+                    userId: admin._id,
+                    type: "report_update",
+                    title: `New ${report.type.toUpperCase()} Report Filed`,
+                    message: `"${report.itemName}" reported by ${report.userId?.name || "a user"} in ${report.locationId?.name || "unknown location"}.`,
+                    relatedReportId: report._id,
+                    isRead: false,
+                }));
+                await Notification.insertMany(notifications);
+            }
+        } catch (notifyErr) {
+            console.error("Admin notification dispatch failed:", notifyErr.message);
         }
 
         res.status(201).json({
@@ -146,6 +167,8 @@ const getReport = async (
 
 
 
+const { sendResolutionReport } = require("../utils/mailer");
+
 const update = async (
     req,
     res,
@@ -159,6 +182,19 @@ const update = async (
                 role: req.user.role,
                 updates: req.body,
             });
+
+        // Trigger email if status was updated to definitively solved (resolved) or dismissed (closed)
+        if (req.body.status && (req.body.status === "resolved" || req.body.status === "closed")) {
+            if (report.userId && report.userId.email) {
+                // Background async task so we don't block response
+                sendResolutionReport(
+                    report.userId.email,
+                    report.itemName,
+                    report.type,
+                    req.body.status
+                ).catch(console.error);
+            }
+        }
 
         res.status(200).json({
             success: true,

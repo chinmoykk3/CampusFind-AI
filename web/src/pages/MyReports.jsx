@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/axios';
-import { Loader2, Search, Filter } from 'lucide-react';
+import { Loader2, Search, Filter, MapPin, Tag, Calendar, Database } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const MyReports = () => {
@@ -28,69 +28,81 @@ const MyReports = () => {
         return report.type === filter;
     });
 
-    if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>;
+    if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary-600" /></div>;
 
     return (
-        <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">My Reports</h1>
-                    <p className="text-slate-600 dark:text-slate-400">Manage and track the status of items you've reported.</p>
+        <div className="max-w-7xl mx-auto pb-12 font-sans">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col md:flex-row md:items-end justify-between border-b border-slate-200 pb-6 gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <Database className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-primary-900 tracking-tight">My Reports</h1>
+                        <p className="text-slate-600 font-medium mt-1">Manage and track the status of items you've submitted to the platform.</p>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 rounded-xl ring-1 ring-slate-900/5 shadow-sm">
-                    <Filter className="w-5 h-5 text-slate-400 ml-2" />
+                <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-xl shadow-sm w-fit">
+                    <Filter className="w-4 h-4 text-slate-500 ml-2 shrink-0" />
                     <select
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
-                        className="bg-transparent border-none text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-0 cursor-pointer outline-none pl-1 pr-6 py-1"
+                        className="bg-transparent border-none text-sm font-bold text-slate-700 focus:ring-0 cursor-pointer outline-none pl-1 pr-6 py-1.5 appearance-none"
                     >
                         <option value="all">All Reports</option>
                         <option value="lost">Lost Items</option>
                         <option value="found">Found Items</option>
                     </select>
                 </div>
-            </div>
+            </motion.div>
 
             {filteredReports.length === 0 ? (
-                <div className="glass-panel p-12 text-center rounded-2xl border-white/20">
-                    <p className="text-slate-500">No reports found matching your criteria.</p>
+                <div className="premium-card bg-slate-50 border border-slate-200 border-dashed p-16 text-center rounded-2xl shadow-sm">
+                    <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">No reports found matching your criteria.</p>
                 </div>
             ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredReports.map(report => (
+                    {filteredReports.map((report, idx) => (
                         <motion.div
                             key={report._id}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm ring-1 ring-slate-900/5 hover:shadow-md transition-shadow"
+                            transition={{ delay: idx * 0.05 }}
+                            className="premium-card bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200 hover:-translate-y-1 hover:shadow-md transition-all group"
                         >
-                            <div className="flex justify-between items-start mb-4 border-b border-slate-100 dark:border-slate-700 pb-4">
-                                <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${report.type === 'lost' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            <div className="flex justify-between items-start mb-6">
+                                <span className={`px-3 py-1.5 rounded-md text-[10px] font-extrabold uppercase tracking-widest border ${report.type === 'lost'
+                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                        : 'bg-mint-50 text-green-700 border-green-200'
+                                    }`}>
                                     {report.type}
                                 </span>
-                                <span className="text-sm font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 capitalize">
+                                <span className={`text-[10px] font-extrabold px-3 py-1.5 rounded-full uppercase tracking-widest border ${report.status === 'resolved'
+                                        ? 'bg-primary-50 border-primary-200 text-primary-700'
+                                        : 'bg-slate-100 border-slate-200 text-slate-600'
+                                    }`}>
                                     {report.status}
                                 </span>
                             </div>
 
-                            <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2">{report.itemName}</h3>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-4 h-10">
-                                {report.description}
+                            <h3 className="font-extrabold text-xl text-primary-900 mb-2 group-hover:text-primary-600 transition-colors">{report.itemName}</h3>
+                            <p className="text-sm text-slate-600 font-medium line-clamp-2 h-10 mb-6 leading-relaxed">
+                                "{report.description}"
                             </p>
 
-                            <div className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
-                                <p className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                                    {report.categoryId?.name || 'Unknown Category'}
+                            <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <p className="flex items-center gap-3 text-sm font-semibold text-slate-700">
+                                    <Tag className="w-4 h-4 text-primary-500" />
+                                    <span className="truncate">{report.categoryId?.name || 'Unknown Category'}</span>
                                 </p>
-                                <p className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                                    {report.locationId?.name || 'Unknown Location'}
+                                <p className="flex items-center gap-3 text-sm font-semibold text-slate-700">
+                                    <MapPin className="w-4 h-4 text-amber-500" />
+                                    <span className="truncate">{report.locationId?.name || 'Unknown Location'}</span>
                                 </p>
-                                <p className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                                    {new Date(report.date).toLocaleDateString()}
+                                <p className="flex items-center gap-3 text-sm font-semibold text-slate-700">
+                                    <Calendar className="w-4 h-4 text-green-500" />
+                                    <span>{new Date(report.date).toLocaleDateString()}</span>
                                 </p>
                             </div>
                         </motion.div>

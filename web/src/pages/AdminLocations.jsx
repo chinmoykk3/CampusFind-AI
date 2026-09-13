@@ -70,13 +70,13 @@ const AdminLocations = () => {
     if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>;
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto text-white">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto text-slate-900">
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <MapPin className="w-8 h-8 text-indigo-500" />
                     <div>
-                        <h1 className="text-3xl font-black text-white font-serif tracking-tight">Location Control</h1>
-                        <p className="text-slate-400">Manage spatial geofences and campus buildings for the AI matching engine.</p>
+                        <h1 className="text-3xl font-black text-slate-900 font-serif tracking-tight">Location Control</h1>
+                        <p className="text-slate-500">Manage spatial geofences and campus buildings for the AI matching engine.</p>
                     </div>
                 </div>
             </div>
@@ -87,23 +87,23 @@ const AdminLocations = () => {
                         <h3 className="text-lg font-bold mb-4">{editingId ? 'Edit Location' : 'New Location'}</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Name / Room</label>
-                                <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2.5 text-white outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. Room 402" />
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Name / Room</label>
+                                <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-900 outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. Room 402" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Building</label>
-                                <input name="building" value={formData.building} onChange={handleChange} className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2.5 text-white outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. Science Complex" />
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Building</label>
+                                <input name="building" value={formData.building} onChange={handleChange} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-900 outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. Science Complex" />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Area Details</label>
-                                <input name="area" value={formData.area} onChange={handleChange} className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2.5 text-white outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. North Wing" />
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Area Details</label>
+                                <input name="area" value={formData.area} onChange={handleChange} className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-slate-900 outline-none focus:border-indigo-500 transition-colors" placeholder="e.g. North Wing" />
                             </div>
                             <div className="pt-2 flex gap-2">
                                 <button type="submit" disabled={isSubmitting} className="flex-1 premium-button px-4 py-2 flex items-center justify-center gap-2">
                                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Save</>}
                                 </button>
                                 {editingId && (
-                                    <button type="button" onClick={() => { setEditingId(null); setFormData({ name: '', building: '', area: '' }); }} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-full border border-slate-700 transition-colors text-sm font-semibold">
+                                    <button type="button" onClick={() => { setEditingId(null); setFormData({ name: '', building: '', area: '' }); }} className="px-4 py-2 bg-slate-50 hover:bg-slate-700 rounded-full border border-slate-200 transition-colors text-sm font-semibold">
                                         Cancel
                                     </button>
                                 )}
@@ -115,11 +115,11 @@ const AdminLocations = () => {
                 <div className="md:col-span-2 premium-card overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-white/5 border-b border-white/10 uppercase text-xs tracking-widest font-bold">
-                                <th className="p-4 text-slate-400">Spatial Node</th>
-                                <th className="p-4 text-slate-400">Region</th>
-                                <th className="p-4 text-slate-400">Status</th>
-                                <th className="p-4 text-slate-400 text-right">Actions</th>
+                            <tr className="bg-white/5 border-b border-slate-200 uppercase text-xs tracking-widest font-bold">
+                                <th className="p-4 text-slate-500">Spatial Node</th>
+                                <th className="p-4 text-slate-500">Region</th>
+                                <th className="p-4 text-slate-500">Status</th>
+                                <th className="p-4 text-slate-500 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -129,7 +129,7 @@ const AdminLocations = () => {
                                         <p className="font-bold text-slate-200">{loc.name}</p>
                                         <p className="text-xs text-slate-500 truncate max-w-[200px]">{loc.building}</p>
                                     </td>
-                                    <td className="p-4 text-sm text-slate-400">{loc.area || '—'}</td>
+                                    <td className="p-4 text-sm text-slate-500">{loc.area || '—'}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-wider rounded border ${loc.isActive ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                                             {loc.isActive ? 'Active' : 'Disabled'}

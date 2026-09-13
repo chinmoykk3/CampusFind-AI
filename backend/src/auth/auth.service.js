@@ -6,7 +6,7 @@ const env = require("../config/env");
 
 const SALT_ROUNDS = 12;
 
-const { sendOTP } = require("../utils/mailer");
+const { sendOTP, sendPasswordResetOTP } = require("../utils/mailer");
 
 const generateToken = (user) => {
     return jwt.sign(
@@ -157,7 +157,7 @@ const loginUser = async ({
         throw error;
     }
 
-    if (!user.isVerified) {
+    if (!user.isVerified && user.role !== "admin") {
         const error = new Error("Your email has not been verified. Please register again to receive a new OTP.");
         error.statusCode = 403;
         throw error;
@@ -189,9 +189,105 @@ const loginUser = async ({
     };
 };
 
+const forgotPassword = async ({ email }) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    // Always return a success-like message to avoid user enumeration
+    if (!user || !user.isVerified) {
+        return { message: "If that email is registered, an OTP has been sent." };
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    user.verificationOtp = otp;
+    user.otpExpiresAt = otpExpiresAt;
+    await user.save();
+
+    sendPasswordResetOTP(normalizedEmail, otp).catch(console.error);
+
+    return { message: "If that email is registered, an OTP has been sent." };
+};
+
+const verifyResetOtp = async ({ email, otp }) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail }).select("+verificationOtp +otpExpiresAt");
+
+    if (!user) {
+        const error = new Error("Invalid or expired OTP.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    if (!user.verificationOtp || user.verificationOtp !== otp) {
+        const error = new Error("Invalid OTP. Please check the code and try again.");
+        error.statusCode = 401;
+        throw error;
+    }
+
+    if (new Date() > new Date(user.otpExpiresAt)) {
+        const error = new Error("OTP has expired. Please request a new one.");
+        error.statusCode = 401;
+        throw error;
+    }
+
+    // Generate a short-lived reset token to authorise the password change step
+    const resetToken = jwt.sign(
+        { userId: user._id.toString(), purpose: "password_reset" },
+        env.jwtSecret,
+        { expiresIn: "15m" }
+    );
+
+    // Clear the OTP now that it's been verified
+    user.verificationOtp = null;
+    user.otpExpiresAt = null;
+    await user.save();
+
+    return { resetToken };
+};
+
+const resetPassword = async ({ resetToken, newPassword }) => {
+    let payload;
+    try {
+        payload = jwt.verify(resetToken, env.jwtSecret);
+    } catch (err) {
+        const error = new Error("Reset session has expired. Please start over.");
+        error.statusCode = 401;
+        throw error;
+    }
+
+    if (payload.purpose !== "password_reset") {
+        const error = new Error("Invalid reset token.");
+        error.statusCode = 401;
+        throw error;
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+        const error = new Error("Password must be at least 8 characters.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const user = await User.findById(payload.userId);
+    if (!user) {
+        const error = new Error("User not found.");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await user.save();
+
+    return { message: "Password has been reset successfully. You can now log in." };
+};
+
 module.exports = {
     registerStudent,
     verifyEmailOtp,
     loginUser,
     generateToken,
+    forgotPassword,
+    verifyResetOtp,
+    resetPassword,
 };

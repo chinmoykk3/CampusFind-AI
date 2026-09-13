@@ -32,10 +32,9 @@ router.get(
     getAllMatches
 );
 
-router.put(
-    "/:id/review",
+router.patch(
+    "/:id",
     authenticate,
-    authorize("admin"),
     reviewMatch
 );
 
