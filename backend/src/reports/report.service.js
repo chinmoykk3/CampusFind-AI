@@ -404,6 +404,16 @@ const updateReport = async ({
         }
 
         report.status = updates.status;
+
+        // Stamp resolvedAt when case is first resolved so the
+        // 24-hour photo cleanup job knows when to purge images.
+        if (updates.status === "resolved" && !report.resolvedAt) {
+            report.resolvedAt = new Date();
+        }
+        // If admin reopens the case, clear the resolvedAt stamp
+        if (updates.status === "active") {
+            report.resolvedAt = null;
+        }
     }
 
     await report.save();

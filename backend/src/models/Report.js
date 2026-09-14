@@ -109,6 +109,12 @@ const reportSchema = new mongoose.Schema(
             default: "active",
             index: true,
         },
+
+        resolvedAt: {
+            type: Date,
+            default: null,
+            index: true,
+        },
     },
     {
         timestamps: true,
