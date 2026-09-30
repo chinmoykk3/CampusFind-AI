@@ -27,10 +27,13 @@ const AdminLayout = () => {
         return () => clearInterval(pollRef.current);
     }, []);
 
-    // Reset badge when admin visits the notifications page
+    // Refresh badge count from DB when admin visits the notifications page
+    // (mark-all-read is called by that page, so count will be 0)
     useEffect(() => {
         if (location.pathname === '/admin/notifications') {
-            setUnreadCount(0);
+            // Short delay to let the page's mark-all-read call complete first
+            const t = setTimeout(fetchUnreadCount, 800);
+            return () => clearTimeout(t);
         }
     }, [location.pathname]);
 

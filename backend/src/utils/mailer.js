@@ -162,9 +162,51 @@ const sendPasswordResetOTP = async (email, otp) => {
     }
 };
 
+const sendAIMatchAlertEmail = async (email, lostItemName, foundItemName, score) => {
+    const percentage = Math.round(score * 100);
+    console.log(`\n================================`);
+    console.log(`🤖 AI MATCH ALERT INTERCEPTED`);
+    console.log(`To: ${email}`);
+    console.log(`Subject: CampusFind AI - Potential Match Found! (${percentage}%)`);
+    console.log(`Body: We found a potential match for '${lostItemName}'.`);
+    console.log(`================================\n`);
+
+    try {
+        if (process.env.SMTP_USER) {
+            await transporter.sendMail({
+                from: `"CampusFind AI" <${process.env.SMTP_USER}>`,
+                to: email,
+                subject: `High Probability Match for your ${lostItemName} (${percentage}%)`,
+                html: `
+                    <div style="font-family: 'Playfair Display', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                        <h2 style="color: #4f46e5; text-align: center;">Potential Match Detected</h2>
+                        <p>Hello,</p>
+                        <p>Our multimodal AI engine just completed a scan and discovered a <strong>${percentage}% similar</strong> item reported on campus that heavily overlaps with your missing item.</p>
+                        
+                        <div style="background: #f8fafc; padding: 20px; margin: 20px 0; border-left: 4px solid #6366f1;">
+                            <strong>Your Lost Item:</strong> ${lostItemName}<br/>
+                            <strong>Matched Item:</strong> ${foundItemName}<br/>
+                            <strong>Confidence Score:</strong> ${percentage}%
+                        </div>
+                        
+                        <p style="color: #64748b; font-size: 14px;">Please login to your CampusFind Dashboard immediately to review the image, exact location radius, and semantic similarity breakdowns.</p>
+                        
+                        <a href="http://localhost:5173/dashboard" style="display:inline-block; padding: 12px 24px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px;">Review Match Dashboard</a>
+
+                        <p style="text-align: center; margin-top: 40px; font-size: 12px; color: #94a3b8;">CampusFind Telemetry System © 2026</p>
+                    </div>
+                `
+            });
+        }
+    } catch (error) {
+        console.error("AI Match mail dispatch failed. Continuing with console fallback.", error.message);
+    }
+};
+
 module.exports = {
     sendOTP,
     sendResolutionReport,
     sendMatchHandoffEmail,
-    sendPasswordResetOTP
+    sendPasswordResetOTP,
+    sendAIMatchAlertEmail
 };

@@ -83,6 +83,18 @@ const reportSchema = new mongoose.Schema(
             index: true,
         },
 
+        geoCoordinates: {
+            type: {
+                type: String,
+                enum: ['Point'],
+                default: undefined
+            },
+            coordinates: {
+                type: [Number], // [longitude, latitude]
+                default: undefined
+            }
+        },
+
         date: {
             type: Date,
             required: true,
@@ -124,5 +136,6 @@ const reportSchema = new mongoose.Schema(
 
 reportSchema.index({ createdAt: -1 });
 reportSchema.index({ date: -1 });
+reportSchema.index({ "geoCoordinates.coordinates": "2dsphere" });
 
 module.exports = mongoose.model("Report", reportSchema);

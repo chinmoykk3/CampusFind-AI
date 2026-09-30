@@ -1,9 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Camera, MapPin, AlignLeft, Calendar, Tag, ArrowRight, CheckCircle2, Loader2, Info } from 'lucide-react';
+import { Camera, MapPin, AlignLeft, Calendar, Tag, ArrowRight, CheckCircle2, Loader2, Info, Navigation2 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: markerIcon2x,
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
+});
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+
+function LocationMarker({ position, setPosition, locateTrigger }) {
+    const map = useMapEvents({
+        click(e) {
+            setPosition(e.latlng);
+        },
+    });
+
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            // Only show toast if it's a manual trigger (locateTrigger > 0)
+            if (locateTrigger > 0) toast.loading("Acquiring GPS Signal...", { id: 'gps' });
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    setPosition(latlng);
+                    map.flyTo(latlng, 17, { animate: true, duration: 1.5 });
+                    if (locateTrigger > 0) toast.success("Location locked!", { id: 'gps' });
+                },
+                (err) => {
+                    console.warn(`Geolocation error: ${err.message}`);
+                    if (locateTrigger > 0) toast.error("Please enable Location in your browser", { id: 'gps' });
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+    }, [map, setPosition, locateTrigger]);
+
+    return position === null ? null : <Marker position={position}></Marker>;
+}
 
 const ReportItem = () => {
     const { type } = useParams(); // 'lost', 'found', or 'new'
@@ -19,6 +62,7 @@ const ReportItem = () => {
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [imageFile, setImageFile] = useState(null);
+    const [locateTrigger, setLocateTrigger] = useState(0);
 
     const [formData, setFormData] = useState({
         itemName: '',
@@ -26,7 +70,17 @@ const ReportItem = () => {
         description: '',
         locationId: '',
         date: '',
+        latitude: '',
+        longitude: ''
     });
+
+    const setCoordinates = (latlng) => {
+        setFormData(prev => ({
+            ...prev,
+            latitude: latlng.lat,
+            longitude: latlng.lng
+        }));
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -80,8 +134,13 @@ const ReportItem = () => {
             submitData.append('itemName', formData.itemName);
             submitData.append('categoryId', formData.categoryId);
             submitData.append('description', formData.description);
-            submitData.append('locationId', formData.locationId);
             submitData.append('date', formData.date);
+            submitData.append('locationId', formData.locationId);
+
+            if (formData.latitude && formData.longitude) {
+                submitData.append('latitude', formData.latitude);
+                submitData.append('longitude', formData.longitude);
+            }
 
             if (imageFile) {
                 submitData.append('image', imageFile);
@@ -163,8 +222,8 @@ const ReportItem = () => {
                                                 type="button"
                                                 onClick={() => setReportType('lost')}
                                                 className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${reportType === 'lost'
-                                                        ? 'bg-white text-amber-600 shadow-sm'
-                                                        : 'text-slate-500 hover:text-slate-700'
+                                                    ? 'bg-white text-amber-600 shadow-sm'
+                                                    : 'text-slate-500 hover:text-slate-700'
                                                     }`}
                                             >
                                                 I Lost Something
@@ -173,8 +232,8 @@ const ReportItem = () => {
                                                 type="button"
                                                 onClick={() => setReportType('found')}
                                                 className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${reportType === 'found'
-                                                        ? 'bg-white text-green-700 shadow-sm'
-                                                        : 'text-slate-500 hover:text-slate-700'
+                                                    ? 'bg-white text-green-700 shadow-sm'
+                                                    : 'text-slate-500 hover:text-slate-700'
                                                     }`}
                                             >
                                                 I Found Something
@@ -262,6 +321,32 @@ const ReportItem = () => {
                                                 className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-all"
                                             />
                                         </div>
+                                        <div className="md:col-span-2 space-y-2 relative z-0 mt-4">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-2 gap-2">
+                                                <div>
+                                                    <label className="text-sm font-bold text-primary-900 flex items-center gap-1.5"><Navigation2 className="w-4 h-4 text-primary-600" /> Precise AI Spatial Map (Optional)</label>
+                                                    <p className="text-xs text-slate-500 font-medium mt-1">Tap on the map exactly where you {isLost ? 'lost' : 'found'} the item. The AI will use standard Haversine mathematical formulas to match cases within 50 meters.</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setLocateTrigger(Date.now())}
+                                                    className="shrink-0 px-3 py-1.5 bg-blue-50 text-blue-700 text-[11px] uppercase tracking-wider font-extrabold rounded-lg border border-blue-200 hover:bg-blue-100 flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                                                >
+                                                    <Navigation2 className="w-3.5 h-3.5" /> Locate Device
+                                                </button>
+                                            </div>
+                                            <div className="h-[240px] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner z-[0]">
+                                                {/* Center on a default random coordinates or default to campus coordinates */}
+                                                <MapContainer center={[28.6139, 77.2090]} zoom={13} scrollWheelZoom={false} style={{ height: "100%", width: "100%", zIndex: 0 }}>
+                                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                                    <LocationMarker
+                                                        position={formData.latitude ? { lat: formData.latitude, lng: formData.longitude } : null}
+                                                        setPosition={setCoordinates}
+                                                        locateTrigger={locateTrigger}
+                                                    />
+                                                </MapContainer>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="text-sm font-bold text-primary-900 mb-2 flex items-center gap-1.5"><Camera className="w-4 h-4 text-slate-500" /> Upload Image Evidence</label>
@@ -341,8 +426,8 @@ const ReportItem = () => {
                         )}
                     </div>
                 </motion.div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

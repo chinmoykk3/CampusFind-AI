@@ -39,6 +39,19 @@ router.put("/:id/read", authenticate, async (req, res, next) => {
     }
 });
 
+// Mark ALL of this user's unread notifications as read
+router.put("/mark-all-read", authenticate, async (req, res, next) => {
+    try {
+        const result = await Notification.updateMany(
+            { userId: req.user.id, isRead: false },
+            { $set: { isRead: true } }
+        );
+        res.status(200).json({ success: true, updated: result.modifiedCount });
+    } catch (error) {
+        next(error);
+    }
+});
+
 const authorize = require("../middleware/authorize");
 const User = require("../models/User");
 const { logAdminAction } = require("../utils/audit");
@@ -55,6 +68,17 @@ router.get("/admin/unread-count", authenticate, authorize("admin"), async (req, 
     try {
         const count = await Notification.countDocuments({ userId: req.user.id, isRead: false });
         res.status(200).json({ success: true, count });
+    } catch (error) { next(error); }
+});
+
+// Mark ALL of this admin's unread notifications as read in one shot
+router.put("/admin/mark-all-read", authenticate, authorize("admin"), async (req, res, next) => {
+    try {
+        const result = await Notification.updateMany(
+            { userId: req.user.id, isRead: false },
+            { $set: { isRead: true } }
+        );
+        res.status(200).json({ success: true, updated: result.modifiedCount });
     } catch (error) { next(error); }
 });
 

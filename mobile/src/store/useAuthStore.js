@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import * as SecureStore from 'expo-secure-store';
+import Storage from '../utils/storage';
 import api from "../api/axios";
 
 export const useAuthStore = create((set, get) => ({
@@ -17,7 +17,7 @@ export const useAuthStore = create((set, get) => ({
             const token = response.data.token || response.data.data?.token;
             const user = response.data.user || response.data.data?.user;
 
-            if (token) await SecureStore.setItemAsync('token', token);
+            if (token) await Storage.setItemAsync('token', token);
 
             set({
                 user: user,
@@ -57,7 +57,7 @@ export const useAuthStore = create((set, get) => ({
             const token = response.data.token || response.data.data?.token;
             const user = response.data.user || response.data.data?.user;
 
-            if (token) await SecureStore.setItemAsync('token', token);
+            if (token) await Storage.setItemAsync('token', token);
 
             set({
                 user: user,
@@ -80,7 +80,7 @@ export const useAuthStore = create((set, get) => ({
         } catch (error) {
             console.warn("Logout error safely ignored", error);
         } finally {
-            await SecureStore.deleteItemAsync('token');
+            await Storage.deleteItemAsync('token');
             set({ user: null, isAuthenticated: false, error: null });
         }
     },
@@ -88,7 +88,7 @@ export const useAuthStore = create((set, get) => ({
     checkAuth: async () => {
         set({ isLoading: true, error: null });
         try {
-            const token = await SecureStore.getItemAsync('token');
+            const token = await Storage.getItemAsync('token');
             if (!token) {
                 set({ user: null, isAuthenticated: false, isLoading: false });
                 return;
@@ -103,7 +103,7 @@ export const useAuthStore = create((set, get) => ({
                 isLoading: false
             });
         } catch (error) {
-            await SecureStore.deleteItemAsync('token');
+            await Storage.deleteItemAsync('token');
             set({
                 user: null,
                 isAuthenticated: false,

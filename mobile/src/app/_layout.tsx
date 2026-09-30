@@ -4,7 +4,7 @@ import { useColorScheme } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useAuthStore } from '../store/useAuthStore';
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { useSocket } from '../hooks/useSocket';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -14,9 +14,12 @@ function RootLayoutNav() {
   const router = useRouter();
   const [appIsReady, setAppIsReady] = useState(false);
 
+  useSocket();
+
   useEffect(() => {
     checkAuth().finally(() => {
       setAppIsReady(true);
+      SplashScreen.hideAsync(); // Dismiss native splash once auth finishes
     });
   }, [checkAuth]);
 
@@ -77,7 +80,6 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   return (
     <ThemeProvider value={colorScheme === 'dark' ? BrutalistDarkTheme : BrutalistLightTheme}>
-      <AnimatedSplashOverlay />
       <RootLayoutNav />
     </ThemeProvider>
   );

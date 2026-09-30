@@ -1,4 +1,4 @@
-const { getDashboardData } = require("./admin.service");
+const { getDashboardData, exportAuditLogs } = require("./admin.service");
 const AuditLog = require("../models/AuditLog");
 
 const getDashboard = async (req, res, next) => {
@@ -24,7 +24,19 @@ const getAuditLogs = async (req, res, next) => {
     }
 };
 
+const downloadAuditLogs = async (req, res, next) => {
+    try {
+        const csvString = await exportAuditLogs();
+        res.header('Content-Type', 'text/csv');
+        res.attachment('campusfind_ai_telemetry_audit.csv');
+        return res.send(csvString);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getDashboard,
-    getAuditLogs
+    getAuditLogs,
+    downloadAuditLogs
 };

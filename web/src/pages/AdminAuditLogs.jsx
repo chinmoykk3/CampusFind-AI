@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/axios';
-import { Loader2, ShieldCheck, Activity } from 'lucide-react';
+import { Loader2, ShieldCheck, Activity, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminAuditLogs = () => {
@@ -23,6 +23,22 @@ const AdminAuditLogs = () => {
         fetchLogs();
     }, []);
 
+    const handleExport = async () => {
+        try {
+            const res = await api.get('/admin/audit/export', { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'campusfind_audit_logs.csv');
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            toast.success("Forensic CSV exported.");
+        } catch (error) {
+            toast.error("Failed to export logs");
+        }
+    };
+
     if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary-600" /></div>;
 
     const EntityBadge = ({ type }) => {
@@ -37,14 +53,19 @@ const AdminAuditLogs = () => {
 
     return (
         <div className="max-w-7xl mx-auto pb-12 font-sans">
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center gap-4 border-b border-slate-200 pb-6">
-                <div className="p-3 bg-purple-50 rounded-xl border border-purple-100">
-                    <ShieldCheck className="w-8 h-8 text-purple-600" />
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-50 rounded-xl border border-purple-100 flex-shrink-0">
+                        <ShieldCheck className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-primary-900 tracking-tight">System Audit Log</h1>
+                        <p className="text-slate-600 font-medium mt-1">Immutable ledger recording all administrative actions.</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 className="text-3xl font-extrabold text-primary-900 tracking-tight">System Audit Log</h1>
-                    <p className="text-slate-600 font-medium mt-1">Immutable ledger recording all administrative actions.</p>
-                </div>
+                <button onClick={handleExport} className="premium-button flex items-center gap-2 py-2.5 px-5 whitespace-nowrap">
+                    <Download className="w-4 h-4" /> Download Forensic CSV
+                </button>
             </motion.div>
 
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="premium-card bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">

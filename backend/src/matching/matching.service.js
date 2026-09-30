@@ -93,6 +93,25 @@ const fallbackTextSimilarity = (
 };
 
 /*
+ * Calculate spatial distance (Haversine formula).
+ */
+const haversineDistance = (coords1, coords2) => {
+    if (!coords1 || !coords2) return null;
+    const [lon1, lat1] = coords1;
+    const [lon2, lat2] = coords2;
+    const R = 6371e3; // metres
+    const rad1 = lat1 * Math.PI / 180;
+    const rad2 = lat2 * Math.PI / 180;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(rad1) * Math.cos(rad2) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // in metres
+};
+
+/*
  * Compare identifying characteristics.
  */
 const characteristicsSimilarity = (
@@ -282,11 +301,26 @@ const calculateMatch = async (
             ? 1
             : 0;
 
-    const locationScore =
-        lostReport.locationId?.toString() ===
-            foundReport.locationId?.toString()
-            ? 1
-            : 0;
+    let locationScore = 0;
+    if (lostReport.geoCoordinates?.coordinates && foundReport.geoCoordinates?.coordinates) {
+        const distance = haversineDistance(
+            lostReport.geoCoordinates.coordinates,
+            foundReport.geoCoordinates.coordinates
+        );
+        if (distance !== null) {
+            if (distance <= 50) locationScore = 1.0;
+            else if (distance <= 200) locationScore = 0.8;
+            else if (distance <= 500) locationScore = 0.5;
+            else if (distance <= 1000) locationScore = 0.2;
+            else locationScore = 0;
+        }
+    } else {
+        locationScore =
+            lostReport.locationId?.toString() ===
+                foundReport.locationId?.toString()
+                ? 1
+                : 0;
+    }
 
     const timeScore = timeSimilarity(
         lostReport.date,
@@ -327,9 +361,13 @@ const calculateMatch = async (
         );
     }
 
-    if (locationScore === 1) {
+    if (locationScore === 1 && lostReport.geoCoordinates?.coordinates) {
         reasons.push(
-            "Both reports reference the same location."
+            "Both reports are within a highly precise spatial radius (< 50 meters)."
+        );
+    } else if (locationScore === 1) {
+        reasons.push(
+            "Both reports reference the same conceptual location."
         );
     }
 
@@ -511,6 +549,33 @@ const generateMatches = async (
                     setDefaultsOnInsert: true,
                 }
             );
+
+        // Notify user via Socket.io if strong match is found
+        if (status === "potential") {
+            try {
+                const { getIO } = require("../config/socket");
+                const io = getIO();
+                const lostRep = await Report.findById(candidate.lostReportId).populate("userId", "email").lean();
+                if (lostRep && lostRep.userId) {
+                    io.to(lostRep.userId._id.toString()).emit("ai_match_found", {
+                        title: "AI Match Found!",
+                        message: "The AI engine found a high probability match for your lost item.",
+                        matchId: match._id,
+                        scores: candidate.scores
+                    });
+
+                    if (lostRep.userId.email) {
+                        const { sendAIMatchAlertEmail } = require("../utils/mailer");
+                        const foundRep = await Report.findById(candidate.foundReportId).select("itemName").lean();
+                        if (foundRep) {
+                            sendAIMatchAlertEmail(lostRep.userId.email, lostRep.itemName, foundRep.itemName, candidate.scores.overall);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Socket emit error:", err.message);
+            }
+        }
 
         savedMatches.push(match);
     }

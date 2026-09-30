@@ -26,6 +26,8 @@ const create = async (
             description,
             identifyingCharacteristics,
             locationId,
+            latitude,
+            longitude,
             date,
             time,
         } = req.body;
@@ -57,6 +59,8 @@ const create = async (
                 description,
                 identifyingCharacteristics,
                 locationId,
+                latitude,
+                longitude,
                 date,
                 time,
                 images,

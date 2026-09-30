@@ -128,9 +128,37 @@ const getDashboardData = async () => {
     };
 };
 
+const AuditLog = require("../models/AuditLog");
+
+const exportAuditLogs = async () => {
+    // Fetch last 1000 logs for forensic export
+    const logs = await AuditLog.find()
+        .sort({ createdAt: -1 })
+        .limit(1000)
+        .populate("actorUserId", "email name role")
+        .lean();
+
+    // CSV Headers
+    const headers = ["Timestamp", "Admin Email", "Admin Name", "Action Type", "Entity Type", "Entity ID", "IP Address"];
+
+    // Convert to CSV
+    const csvRows = logs.map(log => [
+        `"${new Date(log.createdAt).toISOString()}"`,
+        `"${log.actorUserId?.email || 'System'}"`,
+        `"${log.actorUserId?.name || 'System'}"`,
+        `"${log.action}"`,
+        `"${log.entityType}"`,
+        `"${log.entityId}"`,
+        `"${log.ipAddress || 'Internal'}"`
+    ].join(","));
+
+    return [headers.join(","), ...csvRows].join("\n");
+};
+
 module.exports = {
     getDashboardStats,
     getRecentReports,
     getRecentMatches,
     getDashboardData,
+    exportAuditLogs,
 };

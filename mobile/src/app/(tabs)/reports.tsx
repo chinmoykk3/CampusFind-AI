@@ -5,7 +5,10 @@ import { useState, useCallback, useEffect } from 'react';
 import api from '../../api/axios';
 import tw from 'twrnc';
 
+import { useRouter } from 'expo-router';
+
 export default function ReportsScreen() {
+    const router = useRouter();
     const [refreshing, setRefreshing] = useState(false);
     const [reports, setReports] = useState<any[]>([]);
     const [matches, setMatches] = useState<any[]>([]);
@@ -18,8 +21,8 @@ export default function ReportsScreen() {
                 api.get('/reports'),
                 api.get('/matching')
             ]);
-            setReports(paramsRep.data.data || []);
-            setMatches(paramsMatch.data.data || []);
+            setReports(paramsRep.data.data?.reports || (Array.isArray(paramsRep.data.data) ? paramsRep.data.data : []));
+            setMatches(paramsMatch.data.data?.matches || (Array.isArray(paramsMatch.data.data) ? paramsMatch.data.data : []));
         } catch (error) {
             console.warn("Failed to fetch telemetry data", error);
         }
@@ -64,7 +67,7 @@ export default function ReportsScreen() {
                 {loading ? (
                     <ActivityIndicator size="large" color="#6366f1" style={tw`mt-8`} />
                 ) : tab === 'reports' ? (
-                    reports.length === 0 ? (
+                    !Array.isArray(reports) || reports.length === 0 ? (
                         <View style={tw`items-center justify-center py-12`}>
                             <Ionicons name="document-text-outline" size={48} color="#334155" />
                             <Text style={tw`text-slate-500 mt-4 text-center px-8`}>
@@ -73,7 +76,11 @@ export default function ReportsScreen() {
                         </View>
                     ) : (
                         reports.map((item) => (
-                            <View key={item._id} style={tw`bg-slate-900/60 p-5 rounded-3xl border border-white/10 mb-4`}>
+                            <TouchableOpacity
+                                key={item._id}
+                                onPress={() => router.push(`/report/${item._id}` as any)}
+                                style={tw`bg-slate-900/60 p-5 rounded-3xl border border-white/10 mb-4`}
+                            >
                                 <View style={tw`flex-row justify-between items-center mb-3`}>
                                     <View style={tw`flex-row items-center`}>
                                         <Ionicons name={item.type === 'found' ? 'add-circle' : 'search'} size={18} color={item.type === 'found' ? '#34d399' : '#f43f5e'} />
@@ -93,11 +100,11 @@ export default function ReportsScreen() {
                                     <Ionicons name="time" size={14} color="#94a3b8" />
                                     <Text style={tw`text-slate-400 text-xs ml-1`}>{item.date}</Text>
                                 </View>
-                            </View>
+                            </TouchableOpacity>
                         ))
                     )
                 ) : (
-                    matches.length === 0 ? (
+                    !Array.isArray(matches) || matches.length === 0 ? (
                         <View style={tw`items-center justify-center py-12`}>
                             <Ionicons name="shield-checkmark-outline" size={48} color="#334155" />
                             <Text style={tw`text-slate-500 mt-4 text-center px-8`}>
@@ -119,7 +126,7 @@ export default function ReportsScreen() {
                                 <Text style={tw`text-slate-300 text-sm mb-4 leading-relaxed`}>
                                     The Telemetry Engine found a highly probable match between your report and another active unit.
                                 </Text>
-                                <TouchableOpacity style={tw`bg-rose-500/20 border border-rose-500/40 py-3 rounded-xl items-center`}>
+                                <TouchableOpacity onPress={() => router.push(`/match/${match._id}` as any)} style={tw`bg-rose-500/20 border border-rose-500/40 py-3 rounded-xl items-center`}>
                                     <Text style={tw`text-rose-400 font-bold`}>View Match Resolution</Text>
                                 </TouchableOpacity>
                             </View>

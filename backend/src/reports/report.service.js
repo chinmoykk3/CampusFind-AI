@@ -24,6 +24,8 @@ const createReport = async ({
     description,
     identifyingCharacteristics,
     locationId,
+    latitude,
+    longitude,
     date,
     time,
     images = [],   // ← accept uploaded image metadata from the controller
@@ -68,7 +70,7 @@ const createReport = async ({
         throw error;
     }
 
-    const report = await Report.create({
+    const reportData = {
         userId,
         type,
         itemName: itemName.trim(),
@@ -85,7 +87,16 @@ const createReport = async ({
         time: time || null,
         images: Array.isArray(images) ? images : [],
         status: "active",
-    });
+    };
+
+    if (latitude !== undefined && longitude !== undefined) {
+        reportData.geoCoordinates = {
+            type: "Point",
+            coordinates: [parseFloat(longitude), parseFloat(latitude)]
+        };
+    }
+
+    const report = await Report.create(reportData);
 
     return Report.findById(report._id)
         .populate("categoryId", "name slug")

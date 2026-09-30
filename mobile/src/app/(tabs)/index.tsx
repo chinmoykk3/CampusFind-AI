@@ -17,7 +17,7 @@ export default function DashboardScreen() {
     const fetchFeed = async () => {
         try {
             const res = await api.get('/reports/public');
-            setFeed(res.data.data);
+            setFeed(res.data.data?.reports || (Array.isArray(res.data.data) ? res.data.data : []));
         } catch (error) {
             console.warn("Failed to fetch feed", error);
         }
@@ -69,7 +69,7 @@ export default function DashboardScreen() {
                     </Text>
                 </View>
 
-                <View style={tw`flex-row justify-between mb-8`}>
+                <View style={tw`flex-row justify-between mb-4`}>
                     <TouchableOpacity
                         onPress={() => router.push('/new-report?type=found' as any)}
                         style={tw`bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-3xl flex-1 mr-2 items-center flex-col`}
@@ -91,6 +91,14 @@ export default function DashboardScreen() {
                     </TouchableOpacity>
                 </View>
 
+                <TouchableOpacity
+                    onPress={() => router.push('/scan-tag' as any)}
+                    style={tw`bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-2xl flex-row items-center justify-center mb-8 shadow-sm`}
+                >
+                    <Ionicons name="qr-code-outline" size={22} color="#818cf8" style={tw`mr-2`} />
+                    <Text style={tw`text-indigo-400 font-bold text-base tracking-wide`}>Scan Smart Tag</Text>
+                </TouchableOpacity>
+
                 <View style={tw`flex-row justify-between items-center mb-4 ml-1`}>
                     <Text style={tw`text-white font-bold text-lg`}>Live Feed</Text>
                     <TouchableOpacity onPress={onRefresh}>
@@ -107,7 +115,11 @@ export default function DashboardScreen() {
                     </View>
                 ) : (
                     feed.map((item) => (
-                        <View key={item._id} style={tw`bg-slate-900/40 p-4 rounded-2xl border border-white/5 mb-4 flex-row items-center`}>
+                        <TouchableOpacity
+                            key={item._id}
+                            onPress={() => router.push(`/report/${item._id}` as any)}
+                            style={tw`bg-slate-900/60 p-5 rounded-3xl border border-white/10 mb-4 flex-row items-center`}
+                        >
                             <View style={tw`w-14 h-14 bg-slate-800 rounded-xl mr-4 items-center justify-center border border-${item.type === 'found' ? 'emerald' : 'rose'}-500/20`}>
                                 <Ionicons name={(item.categoryId?.icon as any) || "cube-outline"} size={24} color={item.type === 'found' ? '#34d399' : '#f43f5e'} />
                             </View>
@@ -118,7 +130,7 @@ export default function DashboardScreen() {
                                 </Text>
                             </View>
                             <View style={tw`w-2 h-2 rounded-full ${item.type === 'found' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                        </View>
+                        </TouchableOpacity>
                     ))
                 )}
             </ScrollView>

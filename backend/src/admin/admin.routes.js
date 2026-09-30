@@ -2,7 +2,8 @@ const express = require("express");
 
 const {
     getDashboard,
-    getAuditLogs
+    getAuditLogs,
+    downloadAuditLogs
 } = require("./admin.controller");
 
 const authenticate = require("../middleware/authenticate");
@@ -12,5 +13,6 @@ const router = express.Router();
 
 router.get("/dashboard", authenticate, authorize("admin"), getDashboard);
 router.get("/audit", authenticate, authorize("admin"), getAuditLogs);
+router.get("/audit/export", authenticate, authorize("admin"), downloadAuditLogs);
 
 module.exports = router;

@@ -1,11 +1,17 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import Storage from '../utils/storage';
 import Constants from 'expo-constants';
 
-// Hack to automatically detect the development server's IP address on LAN!
-const debuggerHost = Constants.expoConfig?.hostUri;
-const localhost = debuggerHost?.split(':')[0] || '192.168.1.100'; // fallback loopback
-export const baseURL = `http://${localhost}:5000/api`;
+import { Platform } from 'react-native';
+
+const getBaseUrl = () => {
+    if (Platform.OS === 'web') return 'http://localhost:5000/api';
+    const debuggerHost = Constants.expoConfig?.hostUri;
+    const resolvedIp = debuggerHost?.split(':')[0] || '192.168.31.236';
+    return `http://${resolvedIp}:5000/api`;
+};
+
+export const baseURL = getBaseUrl();
 
 const api = axios.create({
     baseURL,
@@ -16,7 +22,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
     async (config) => {
-        const token = await SecureStore.getItemAsync('token');
+        const token = await Storage.getItemAsync('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }

@@ -2,41 +2,75 @@
 
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
-  /* Simple, Refined & Professional Palette (shadcn/ui style neutral) */
-  --color-background: #FAFAFA;
-  /* Very soft, clean off-white */
-  --color-foreground: #09090B;
-  /* Deep zinc / almost black */
-
-  --color-primary-50: #F4F4F5;
-  --color-primary-100: #E4E4E7;
-  --color-primary-500: #71717A;
-  --color-primary-600: #27272A;
-  --color-primary-700: #18181B;
-  /* Primary: Premium Black/Zinc */
-  --color-primary-900: #09090B;
-
-  --color-accent: #2563EB;
-  /* Used sparingly for links/focus */
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
-    --color-background: #FAFAFA;
-    --color-foreground: #09090B;
+    --bg-primary: #FAF9F6;
+    /* Warm alabaster/beige */
+    --bg-card: #FFFFFF;
+    --bg-muted: #F5F5F4;
+    /* stone-100 */
+    --border-color: #e7e5e4;
+    /* stone-200 */
+    --border-hover: #d6d3d1;
+    /* stone-300 */
+
+    --text-strong: #09090B;
+    --text-muted: #71717A;
+
+    --btn-primary-bg: #1c1917;
+    /* stone-900 */
+    --btn-primary-hover: #292524;
+    /* stone-800 */
+    --btn-primary-text: #FFFFFF;
+
+    --btn-secondary-bg: #FFFFFF;
+    --btn-secondary-hover: #F4F4F5;
+
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+    --shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+    --input-focus: rgba(24, 24, 27, 0.1);
+  }
+
+  .dark {
+    --bg-primary: #000000;
+    /* Pure black for maximum contrast */
+    --bg-card: #09090b;
+    /* Zinc 950 */
+    --bg-muted: #18181b;
+    /* Zinc 900 */
+    --border-color: #27272a;
+    --border-hover: #3f3f46;
+
+    --text-strong: #FAFAFA;
+    --text-muted: #A1A1AA;
+
+    --btn-primary-bg: #FFFFFF;
+    --btn-primary-hover: #e7e5e4;
+    /* stone-200 */
+    --btn-primary-text: #000000;
+
+    --btn-secondary-bg: #09090b;
+    --btn-secondary-hover: #27272A;
+
+    --shadow-sm: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    --shadow-hover: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    --input-focus: rgba(255, 255, 255, 0.2);
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background-color: var(--bg-primary);
+    color: var(--text-strong);
     line-height: 1.6;
     letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-image: none;
-    /* Absolutely clean, no patterns or gradients */
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   h1,
@@ -46,98 +80,76 @@
   h5,
   h6 {
     font-weight: 600;
-    /* Refined semibold instead of aggressive bold */
     letter-spacing: -0.02em;
-    color: #09090B;
+    color: var(--text-strong);
   }
 }
 
-/* 
- * REFINED & PROFESSIONAL
- * Minimalist, high contrast, typography-first, highly trusted.
- */
-
-* {
-  border-radius: 6px;
-  /* Structured, mature geometry */
+/* Dark Mode Safeties - Scope to .dark ONLY to avoid breaking light mode */
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: var(--text-strong) !important;
 }
 
-/* Base Text Colors */
-.text-slate-900,
-.text-slate-800,
-.text-slate-700,
-.text-slate-600 {
-  color: #09090B !important;
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: var(--text-muted) !important;
 }
 
-.text-slate-500,
-.text-slate-400 {
-  color: #71717A !important;
-  /* Soft but highly legible gray */
+.dark .bg-slate-50 {
+  background-color: var(--bg-primary) !important;
 }
 
-/* Global Background Override */
-.bg-slate-50 {
-  background-color: #FAFAFA !important;
-}
-
-/* Core Structural Cards */
-.premium-card,
-.bg-white {
-  background: #FFFFFF !important;
-  border: 1px solid #E4E4E7 !important;
-  /* Extremely thin, refined border */
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03) !important;
+/* Premium Components */
+.premium-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-sm) !important;
   border-radius: 8px !important;
-  color: #09090B !important;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease !important;
+  color: var(--text-strong) !important;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.3s ease !important;
 }
 
-/* Very subtle hover lift */
+.dark .bg-white {
+  background: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-strong) !important;
+}
+
 .premium-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03) !important;
-  border-color: #D4D4D8 !important;
+  box-shadow: var(--shadow-hover) !important;
+  border-color: var(--border-hover) !important;
   transform: none !important;
-  /* No bouncy animations on professional sites */
 }
 
-/* Top Navigation Bar */
-header.bg-white,
-.sticky {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border-bottom: 1px solid #E4E4E7 !important;
-  box-shadow: none !important;
+/* Navigation */
+.dark header.bg-white,
+.dark .sticky {
+  background: var(--bg-card) !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
-/* Form Primitives */
-input,
-select,
-textarea {
-  background: #FFFFFF !important;
-  border: 1px solid #E4E4E7 !important;
-  color: #09090B !important;
-  border-radius: 6px !important;
-  padding: 10px 14px !important;
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02) !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+/* Forms (Dark Mode Scoped) */
+.dark input,
+.dark select,
+.dark textarea {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-strong) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
   outline: none !important;
-  border-color: #18181B !important;
-  /* Professional dark focus ring */
-  box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.1) !important;
-  transform: none !important;
+  border-color: var(--text-strong) !important;
+  box-shadow: 0 0 0 2px var(--input-focus) !important;
 }
 
-/* Primary Interaction Boundaries */
-button,
+/* Custom Component Buttons */
 a.premium-button,
 a.secondary-button {
   transition: all 0.15s ease !important;
@@ -147,70 +159,58 @@ a.secondary-button {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
-  /* Removes uppercase SHOUTING */
   cursor: pointer !important;
-  box-shadow: none !important;
 }
 
-/* Simple, sleek dark primary buttons */
 a.premium-button,
-button.bg-primary-600 {
-  background: #18181B !important;
-  color: #FFFFFF !important;
+.dark button.bg-primary-600 {
+  background: var(--btn-primary-bg) !important;
+  color: var(--btn-primary-text) !important;
   border: 1px solid transparent !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
 a.premium-button:hover:not(:disabled),
-button.bg-primary-600:hover:not(:disabled) {
-  background: #27272A !important;
-  color: #FFFFFF !important;
-  transform: none !important;
+.dark button.bg-primary-600:hover:not(:disabled) {
+  background: var(--btn-primary-hover) !important;
+  color: var(--btn-primary-text) !important;
 }
 
 a.premium-button:active:not(:disabled),
-button.bg-primary-600:active:not(:disabled) {
+.dark button.bg-primary-600:active:not(:disabled) {
   transform: scale(0.98) !important;
 }
 
-/* Secondary Actions */
 a.secondary-button {
-  background: #FFFFFF !important;
-  color: #18181B !important;
-  border: 1px solid #E4E4E7 !important;
+  background: var(--btn-secondary-bg) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border-color) !important;
 }
 
 a.secondary-button:hover:not(:disabled) {
-  background: #F4F4F5 !important;
-  border-color: #D4D4D8 !important;
-  transform: none !important;
+  background: var(--btn-secondary-hover) !important;
+  border-color: var(--border-hover) !important;
 }
 
 a.secondary-button:active:not(:disabled) {
   transform: scale(0.98) !important;
 }
 
-/* Accessible Disabled States */
-button:disabled,
+/* Disabled */
+.dark button:disabled,
 a.premium-button:disabled,
 a.secondary-button:disabled {
   opacity: 0.5 !important;
   cursor: not-allowed !important;
-  transform: none !important;
-  background: #F4F4F5 !important;
-  color: #A1A1AA !important;
-  border-color: #E4E4E7 !important;
+  background: var(--bg-muted) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border-color) !important;
 }
 
-/* Badges / Accents */
 .bg-accent-mint,
 .bg-primary-50 {
-  background: #F4F4F5 !important;
-  color: #18181B !important;
-  border: 1px solid #E4E4E7 !important;
-  box-shadow: none !important;
+  background: var(--bg-muted) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border-color) !important;
   font-weight: 500 !important;
 }
 

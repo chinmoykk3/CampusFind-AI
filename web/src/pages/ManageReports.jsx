@@ -1,12 +1,25 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
 import {
     Loader2, Database, ShieldAlert, CheckCircle, XCircle,
     Eye, X, MapPin, Calendar, Clock, Tag, User, Image as ImageIcon,
-    FileText, AlertCircle, ChevronRight
+    FileText, AlertCircle, ChevronRight, QrCode, Search,
+    ChevronDown, ChevronUp, ChevronLeft
 } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import toast from 'react-hot-toast';
+import {
+    createColumnHelper,
+    flexRender,
+    getCoreRowModel,
+    useReactTable,
+    getSortedRowModel,
+    getFilteredRowModel,
+    getPaginationRowModel,
+} from '@tanstack/react-table';
+
+const columnHelper = createColumnHelper();
 
 /* ─────────────────────────────────────────────────────────────── */
 /*  Status badge                                                    */
@@ -32,7 +45,7 @@ const StatusBadge = ({ status }) => {
 const ReportDetailModal = ({ report, onClose, onStatusChange, actionLoading }) => {
     if (!report) return null;
 
-    const backendBase = 'http://localhost:5000';
+    const backendBase = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
     const images = report.images || [];
 
     const Field = ({ icon: Icon, label, value }) => (
@@ -169,6 +182,21 @@ const ReportDetailModal = ({ report, onClose, onStatusChange, actionLoading }) =
                             <p>Last updated: {new Date(report.updatedAt).toLocaleString('en-IN')}</p>
                         )}
                     </div>
+
+                    {/* PHYSICAL SMART TAG FOR ADMIMS */}
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex gap-4 mt-6 print-this">
+                        <div className="bg-white p-2 rounded-lg">
+                            <QRCode value={`${window.location.origin}/report/${report._id}`} size={64} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                                <QrCode className="w-3.5 h-3.5" /> Inventory Smart Tag
+                            </p>
+                            <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                                Print this tag and attach it to the physical item in your locker. Users can scan it offline to instantly pull up this asset.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Footer — action buttons */}
@@ -215,6 +243,8 @@ const ManageReports = () => {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
     const [selectedReport, setSelectedReport] = useState(null);
+
+    // Custom Filters
     const [search, setSearch] = useState('');
     const [filterType, setFilterType] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
@@ -246,11 +276,117 @@ const ManageReports = () => {
         }
     };
 
-    const filtered = reports.filter(r => {
+    const filtered = useMemo(() => reports.filter(r => {
         if (search && !r.itemName.toLowerCase().includes(search.toLowerCase()) && !(r.userId?.name || '').toLowerCase().includes(search.toLowerCase())) return false;
         if (filterType && r.type !== filterType) return false;
         if (filterStatus && r.status !== filterStatus) return false;
         return true;
+    }), [reports, search, filterType, filterStatus]);
+
+    const columns = useMemo(() => [
+        columnHelper.accessor('itemName', {
+            header: 'Target Asset',
+            cell: info => {
+                const report = info.row.original;
+                return (
+                    <button onClick={() => setSelectedReport(report)} className="text-left group/btn outline-none">
+                        <p className="font-bold text-primary-900 dark:text-stone-100 group-hover/btn:text-primary-600 transition-colors flex items-center gap-1">
+                            {report.itemName}
+                            {(report.images?.length > 0) && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 px-1.5 py-0.5 rounded ml-1 transition-colors">
+                                    <ImageIcon className="w-2.5 h-2.5" /> {report.images.length}
+                                </span>
+                            )}
+                        </p>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-primary-600 mt-0.5">{report.categoryId?.name}</p>
+                    </button>
+                );
+            }
+        }),
+        columnHelper.accessor('type', {
+            header: 'Type',
+            cell: info => (
+                <span className={`text-[11px] font-extrabold uppercase tracking-widest ${info.getValue() === 'lost' ? 'text-amber-600' : 'text-green-600'}`}>
+                    {info.getValue()}
+                </span>
+            )
+        }),
+        columnHelper.accessor(row => row.userId?.name, {
+            id: 'reporter',
+            header: 'Reporter',
+            cell: info => {
+                const report = info.row.original;
+                return (
+                    <>
+                        <p className="text-sm font-bold text-primary-900 dark:text-stone-100">{report.userId?.name || 'Unknown'}</p>
+                        <p className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 mt-0.5">{report.userId?.email || 'N/A'}</p>
+                    </>
+                );
+            }
+        }),
+        columnHelper.accessor('createdAt', {
+            header: 'Filed',
+            cell: info => {
+                const date = new Date(info.getValue());
+                return (
+                    <>
+                        <p className="text-xs font-semibold text-stone-600 dark:text-stone-300">{date.toLocaleDateString('en-IN')}</p>
+                        <p className="text-[10px] text-stone-400 dark:text-stone-500">{date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </>
+                );
+            },
+            sortingFn: 'datetime'
+        }),
+        columnHelper.accessor('status', {
+            header: 'Status',
+            cell: info => <StatusBadge status={info.getValue()} />
+        }),
+        columnHelper.display({
+            id: 'actions',
+            header: () => <div className="text-right w-full">Actions</div>,
+            cell: info => {
+                const report = info.row.original;
+                return (
+                    <div className="flex items-center justify-end gap-2">
+                        <button
+                            onClick={() => setSelectedReport(report)}
+                            className="px-3 py-1.5 rounded-lg bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 border border-primary-100 dark:border-primary-800/50 hover:bg-primary-100 dark:hover:bg-primary-900/50 text-[10px] font-extrabold uppercase tracking-wider transition-colors flex items-center gap-1"
+                        >
+                            <Eye className="w-3.5 h-3.5" /> View
+                        </button>
+                        {report.status !== 'resolved' && (
+                            <button
+                                disabled={actionLoading === report._id}
+                                onClick={() => updateStatus(report._id, 'resolved')}
+                                className="px-3 py-1.5 rounded-lg flex items-center gap-1.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-transparent hover:border-green-200 dark:hover:border-green-800/50 hover:bg-green-100 dark:hover:bg-green-900/50 text-[10px] font-extrabold uppercase tracking-wider transition-colors disabled:opacity-50"
+                            >
+                                <CheckCircle className="w-3.5 h-3.5" /> Close
+                            </button>
+                        )}
+                        {report.status !== 'removed' && (
+                            <button
+                                disabled={actionLoading === report._id}
+                                onClick={() => updateStatus(report._id, 'removed')}
+                                className="px-3 py-1.5 rounded-lg flex items-center gap-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border border-transparent hover:border-rose-200 dark:hover:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-[10px] font-extrabold uppercase tracking-wider transition-colors disabled:opacity-50"
+                            >
+                                <XCircle className="w-3.5 h-3.5" /> Dismiss
+                            </button>
+                        )}
+                    </div>
+                );
+            }
+        })
+    ], [actionLoading]);
+
+    const table = useReactTable({
+        data: filtered,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        initialState: {
+            pagination: { pageSize: 8 }
+        }
     });
 
     if (loading) return (
@@ -261,35 +397,40 @@ const ManageReports = () => {
 
     return (
         <>
-            <div className="max-w-7xl mx-auto pb-12 font-sans">
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center gap-4 border-b border-slate-200 pb-6">
-                    <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
-                        <Database className="w-8 h-8 text-blue-600" />
+            <div className="max-w-7xl mx-auto pb-12 font-sans px-4 sm:px-6 lg:px-8 pt-8">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col md:flex-row md:items-center gap-4 border-b border-stone-200 dark:border-stone-800 pb-6 transition-colors">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                            <Database className="w-8 h-8 text-blue-600" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-extrabold text-primary-900 dark:text-white tracking-tight">Case Management</h1>
+                            <p className="text-stone-600 dark:text-stone-400 font-medium mt-1">Control active platform property tracking cases.</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-extrabold text-primary-900 tracking-tight">Case Management</h1>
-                        <p className="text-slate-600 font-medium mt-1">Control active platform property tracking cases.</p>
-                    </div>
-                    <div className="ml-auto text-right">
-                        <p className="text-2xl font-extrabold text-primary-900">{reports.length}</p>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Cases</p>
+                    <div className="md:ml-auto md:text-right hidden sm:block">
+                        <p className="text-2xl font-extrabold text-primary-900 dark:text-stone-100">{reports.length}</p>
+                        <p className="text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-widest">Total Cases</p>
                     </div>
                 </motion.div>
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-3 mb-5">
-                    <div className="relative flex-1 min-w-[180px]">
+                    <div className="relative flex-1 min-w-[200px]">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-4 w-4 text-stone-400" />
+                        </div>
                         <input
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            placeholder="Search by item or reporter..."
-                            className="w-full pl-4 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-300 placeholder:text-slate-400"
+                            placeholder="Search by asset or investigator..."
+                            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#09090b] border border-stone-200 dark:border-stone-800 rounded-xl text-sm font-medium text-stone-700 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-primary-300 dark:focus:ring-primary-500 placeholder:text-stone-400 transition-colors"
                         />
                     </div>
                     <select
                         value={filterType}
                         onChange={e => setFilterType(e.target.value)}
-                        className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-300"
+                        className="px-4 py-2.5 bg-white dark:bg-[#09090b] border border-stone-200 dark:border-stone-800 rounded-xl text-sm font-bold text-stone-600 dark:text-stone-300 focus:outline-none focus:ring-2 focus:ring-primary-300 dark:focus:ring-primary-500 transition-colors"
                     >
                         <option value="">All Types</option>
                         <option value="lost">Lost</option>
@@ -298,102 +439,87 @@ const ManageReports = () => {
                     <select
                         value={filterStatus}
                         onChange={e => setFilterStatus(e.target.value)}
-                        className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-300"
+                        className="px-4 py-2.5 bg-white dark:bg-[#09090b] border border-stone-200 dark:border-stone-800 rounded-xl text-sm font-bold text-stone-600 dark:text-stone-300 focus:outline-none focus:ring-2 focus:ring-primary-300 dark:focus:ring-primary-500 transition-colors"
                     >
                         <option value="">All Statuses</option>
-                        <option value="active">Active</option>
+                        <option value="active">Active (Review)</option>
                         <option value="resolved">Resolved</option>
-                        <option value="removed">Removed</option>
+                        <option value="removed">Dismissed</option>
                     </select>
                 </div>
 
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="premium-card bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="overflow-x-auto">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="bg-white dark:bg-[#09090b] rounded-2xl shadow-sm border border-stone-200 dark:border-stone-800 overflow-hidden transition-colors">
+                    <div className="overflow-x-auto min-h-[400px]">
                         <table className="w-full text-left border-collapse min-w-max">
                             <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200 uppercase text-[11px] tracking-widest font-extrabold text-slate-500">
-                                    <th className="p-4">Target Asset</th>
-                                    <th className="p-4">Type</th>
-                                    <th className="p-4">Reporter</th>
-                                    <th className="p-4">Filed</th>
-                                    <th className="p-4">Status</th>
-                                    <th className="p-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {filtered.map((report) => (
-                                    <tr key={report._id} className="hover:bg-primary-50/30 transition-colors group">
-                                        <td className="p-4">
-                                            <button
-                                                onClick={() => setSelectedReport(report)}
-                                                className="text-left group/btn"
+                                {table.getHeaderGroups().map(headerGroup => (
+                                    <tr key={headerGroup.id} className="bg-stone-50 dark:bg-stone-900/50 border-b border-stone-200 dark:border-stone-800 transition-colors">
+                                        {headerGroup.headers.map(header => (
+                                            <th
+                                                key={header.id}
+                                                className={`p-4 font-bold text-[11px] uppercase tracking-widest text-stone-500 dark:text-stone-400 ${header.column.getCanSort() ? 'cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-800 select-none' : ''}`}
+                                                onClick={header.column.getToggleSortingHandler()}
                                             >
-                                                <p className="font-bold text-primary-900 group-hover/btn:text-primary-600 transition-colors flex items-center gap-1">
-                                                    {report.itemName}
-                                                    {(report.images?.length > 0) && (
-                                                        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-blue-500 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded ml-1">
-                                                            <ImageIcon className="w-2.5 h-2.5" /> {report.images.length}
+                                                <div className={`flex items-center gap-1 ${header.id === 'actions' ? 'justify-end' : ''}`}>
+                                                    {flexRender(header.column.columnDef.header, header.getContext())}
+                                                    {header.column.getCanSort() && (
+                                                        <span className="w-4 flex justify-center">
+                                                            {{
+                                                                asc: <ChevronUp className="w-4 h-4 text-primary-600" />,
+                                                                desc: <ChevronDown className="w-4 h-4 text-primary-600" />,
+                                                            }[header.column.getIsSorted()] ?? null}
                                                         </span>
                                                     )}
-                                                </p>
-                                                <p className="text-[11px] font-bold uppercase tracking-wider text-primary-600 mt-0.5">{report.categoryId?.name}</p>
-                                            </button>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className={`text-[11px] font-extrabold uppercase tracking-widest ${report.type === 'lost' ? 'text-amber-600' : 'text-green-600'}`}>
-                                                {report.type}
-                                            </span>
-                                        </td>
-                                        <td className="p-4">
-                                            <p className="text-sm font-bold text-primary-900">{report.userId?.name || 'Unknown'}</p>
-                                            <p className="text-[11px] font-semibold text-slate-500 mt-0.5">{report.userId?.email || 'N/A'}</p>
-                                        </td>
-                                        <td className="p-4">
-                                            <p className="text-xs font-semibold text-slate-600">{new Date(report.createdAt).toLocaleDateString('en-IN')}</p>
-                                            <p className="text-[10px] text-slate-400">{new Date(report.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
-                                        </td>
-                                        <td className="p-4">
-                                            <StatusBadge status={report.status} />
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => setSelectedReport(report)}
-                                                    className="px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 border border-primary-100 hover:bg-primary-100 text-[10px] font-extrabold uppercase tracking-wider transition-colors flex items-center gap-1"
-                                                >
-                                                    <Eye className="w-3.5 h-3.5" /> View
-                                                </button>
-                                                {report.status !== 'resolved' && (
-                                                    <button
-                                                        disabled={actionLoading === report._id}
-                                                        onClick={() => updateStatus(report._id, 'resolved')}
-                                                        className="px-3 py-1.5 rounded-lg flex items-center gap-1.5 bg-green-50 text-green-700 border border-transparent hover:border-green-200 hover:bg-green-100 text-[10px] font-extrabold uppercase tracking-wider transition-colors disabled:opacity-50"
-                                                    >
-                                                        <CheckCircle className="w-3.5 h-3.5" /> Close
-                                                    </button>
-                                                )}
-                                                {report.status !== 'removed' && (
-                                                    <button
-                                                        disabled={actionLoading === report._id}
-                                                        onClick={() => updateStatus(report._id, 'removed')}
-                                                        className="px-3 py-1.5 rounded-lg flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-transparent hover:border-rose-200 hover:bg-rose-100 text-[10px] font-extrabold uppercase tracking-wider transition-colors disabled:opacity-50"
-                                                    >
-                                                        <XCircle className="w-3.5 h-3.5" /> Dismiss
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
+                                                </div>
+                                            </th>
+                                        ))}
                                     </tr>
                                 ))}
-                                {filtered.length === 0 && (
+                            </thead>
+                            <tbody className="divide-y divide-stone-100 dark:divide-stone-800/60">
+                                {table.getRowModel().rows.length > 0 ? (
+                                    table.getRowModel().rows.map(row => (
+                                        <tr key={row.id} className="hover:bg-primary-50/30 dark:hover:bg-stone-900/40 transition-colors">
+                                            {row.getVisibleCells().map(cell => (
+                                                <td key={cell.id} className="p-4">
+                                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : (
                                     <tr>
-                                        <td colSpan="6" className="p-16 text-center text-slate-500 font-extrabold tracking-widest text-[11px] uppercase bg-slate-50">
+                                        <td colSpan={columns.length} className="p-16 text-center text-stone-500 font-extrabold tracking-widest text-[11px] uppercase bg-stone-50 dark:bg-stone-900/30">
                                             {reports.length === 0 ? 'Database Empty. No cases on file.' : 'No cases match your filters.'}
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/20">
+                        <div className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 font-medium">
+                            <span>Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}</span>
+                            <span className="bg-white dark:bg-stone-800 px-2 py-1 rounded shadow-sm border border-stone-200 dark:border-stone-700 text-xs">Total: {table.getPrePaginationRowModel().rows.length}</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => table.previousPage()}
+                                disabled={!table.getCanPreviousPage()}
+                                className="p-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-stone-700 dark:text-stone-300"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => table.nextPage()}
+                                disabled={!table.getCanNextPage()}
+                                className="p-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-stone-700 dark:text-stone-300"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
             </div>

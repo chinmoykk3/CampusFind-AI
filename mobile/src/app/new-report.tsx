@@ -1,22 +1,67 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../api/axios';
 import tw from 'twrnc';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function NewReportScreen() {
     const { type } = useLocalSearchParams();
     const isFound = type === 'found';
     const router = useRouter();
 
+    const handleBack = () => {
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/' as any);
+        }
+    };
+
     const [itemName, setItemName] = useState('');
     const [description, setDescription] = useState('');
-    // For MVP prototyping without large selects, we'll hardcode one of the seeded category/location IDs
-    // Assuming backend handles these properly, or we can fetch them. Let's use simple IDs.
+
+    // Dynamic Selection State
+    const [categories, setCategories] = useState<any[]>([]);
+    const [locations, setLocations] = useState<any[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [selectedLocation, setSelectedLocation] = useState('');
+
+    const [loadingData, setLoadingData] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [imageUri, setImageUri] = useState<string | null>(null);
+
+    React.useEffect(() => {
+        const fetchMetadata = async () => {
+            try {
+                const [resCat, resLoc] = await Promise.all([
+                    api.get('/categories'),
+                    api.get('/locations')
+                ]);
+                setCategories(resCat.data.data);
+                setLocations(resLoc.data.data);
+            } catch (err) {
+                console.warn("Failed to prefetch metadata", err);
+            } finally {
+                setLoadingData(false);
+            }
+        };
+        fetchMetadata();
+    }, []);
+
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.8,
+        });
+
+        if (!result.canceled) setImageUri(result.assets[0].uri);
+    };
 
     const handleSubmit = async () => {
         if (!itemName.trim() || !description.trim()) {
@@ -27,32 +72,34 @@ export default function NewReportScreen() {
         setLoading(true);
         setError(null);
         try {
-            // Note: On physical deployments, categoryId and locationId would be fetched cleanly from API.
-            // Sending standard payload string parameters allows backend validation to handle it safely or we supply mock valid IDs.
-            // Alternatively, backend `report.controller.js` demands valid ObjectIDs. 
-            // We will fetch real categories on mount. Let's fetch them now!
-            const resCat = await api.get('/admin/categories');
-            const resLoc = await api.get('/admin/locations');
-
-            if (resCat.data.data.length === 0 || resLoc.data.data.length === 0) {
-                throw new Error("Cannot report: Server has no valid categories/locations seeded.");
+            if (!selectedCategory || !selectedLocation) {
+                throw new Error("Please select a Category and Location.");
             }
 
-            const payload = {
-                type: isFound ? 'found' : 'lost',
-                itemName,
-                description,
-                categoryId: resCat.data.data[0]._id, // using first available category via API
-                locationId: resLoc.data.data[0]._id, // using first available location via API
-                date: new Date().toISOString().split('T')[0],
-                time: new Date().toTimeString().split(' ')[0].substring(0, 5),
-                identifyingCharacteristics: [itemName.split(' ')[0], "Campus"]
-            };
+            const formData = new FormData();
+            formData.append('type', isFound ? 'found' : 'lost');
+            formData.append('itemName', itemName);
+            formData.append('description', description);
+            formData.append('categoryId', selectedCategory);
+            formData.append('locationId', selectedLocation);
+            formData.append('date', new Date().toISOString().split('T')[0]);
+            formData.append('time', new Date().toTimeString().split(' ')[0].substring(0, 5));
+            formData.append('identifyingCharacteristics', itemName.split(' ')[0]);
 
-            await api.post('/reports', payload);
+            if (imageUri) {
+                const localUri = imageUri;
+                const filename = localUri.split('/').pop() || 'photo.jpg';
+                const match = /\.(\w+)$/.exec(filename);
+                const type = match ? `image/${match[1]}` : `image/jpeg`;
+                formData.append('image', { uri: localUri, name: filename, type } as any);
+            }
+
+            await api.post('/reports', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
             // Redirect back to dashboard safely
-            router.back();
+            handleBack();
         } catch (err: any) {
             setError(err.response?.data?.message || err.message || "Failed to submit telemetry report.");
         } finally {
@@ -63,7 +110,7 @@ export default function NewReportScreen() {
     return (
         <SafeAreaView style={tw`flex-1 bg-black`}>
             <View style={tw`flex-row items-center px-4 py-4 border-b border-slate-800`}>
-                <TouchableOpacity onPress={() => router.back()} style={tw`p-2 bg-slate-900 rounded-full`}>
+                <TouchableOpacity onPress={handleBack} style={tw`p-2 bg-slate-900 rounded-full`}>
                     <Ionicons name="close" size={24} color="white" />
                 </TouchableOpacity>
                 <Text style={tw`text-white font-bold text-lg ml-4`}>
@@ -123,10 +170,57 @@ export default function NewReportScreen() {
                         </View>
                     </View>
 
+                    {/* Metadata Selection */}
+                    {!loadingData && (
+                        <>
+                            <View style={tw`mb-6`}>
+                                <Text style={tw`text-slate-400 text-sm font-bold uppercase tracking-wider mb-2 ml-1`}>Asset Classification</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={tw`py-2`}>
+                                    {categories.map(cat => (
+                                        <TouchableOpacity
+                                            key={cat._id}
+                                            onPress={() => setSelectedCategory(cat._id)}
+                                            style={tw`mr-3 px-4 py-3 border rounded-xl ${selectedCategory === cat._id ? (isFound ? 'bg-emerald-600 border-emerald-500' : 'bg-indigo-600 border-indigo-500') : 'bg-slate-900 border-slate-700'}`}
+                                        >
+                                            <Text style={tw`font-bold ${selectedCategory === cat._id ? 'text-white' : 'text-slate-400'}`}>{cat.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+
+                            <View style={tw`mb-8`}>
+                                <Text style={tw`text-slate-400 text-sm font-bold uppercase tracking-wider mb-2 ml-1`}>Known Spatial Location</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={tw`py-2`}>
+                                    {locations.map(loc => (
+                                        <TouchableOpacity
+                                            key={loc._id}
+                                            onPress={() => setSelectedLocation(loc._id)}
+                                            style={tw`mr-3 px-4 py-2.5 border rounded-xl ${selectedLocation === loc._id ? 'bg-slate-700 border-slate-500' : 'bg-slate-900 border-slate-700'}`}
+                                        >
+                                            <Text style={tw`font-bold ${selectedLocation === loc._id ? 'text-white' : 'text-slate-400'}`}>{loc.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </>
+                    )}
+
+                    <View style={tw`mb-8`}>
+                        <Text style={tw`text-slate-400 text-sm font-bold uppercase tracking-wider mb-2 ml-1`}>Visual Evidence</Text>
+                        <TouchableOpacity onPress={pickImage} style={tw`bg-slate-900 border border-slate-700 rounded-2xl items-center justify-center p-6 border-dashed`}>
+                            {imageUri ? (
+                                <Image source={{ uri: imageUri }} style={tw`w-full h-40 rounded-xl mb-3`} />
+                            ) : (
+                                <Ionicons name="camera-outline" size={32} color="#64748b" style={tw`mb-2`} />
+                            )}
+                            <Text style={tw`text-slate-400 font-medium`}>{imageUri ? 'Tap to change photo' : 'Upload physical asset photo'}</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity
                         onPress={handleSubmit}
-                        disabled={loading || !itemName || !description}
-                        style={tw`w-full py-4 rounded-2xl flex-row justify-center items-center ${(!itemName || !description || loading) ? 'bg-indigo-900/50' : 'bg-indigo-600'
+                        disabled={loading || !itemName || !description || !selectedCategory || !selectedLocation}
+                        style={tw`w-full py-4 rounded-2xl flex-row justify-center items-center ${(!itemName || !description || !selectedCategory || !selectedLocation || loading) ? 'bg-indigo-900/50' : 'bg-indigo-600'
                             }`}
                     >
                         {loading ? (
