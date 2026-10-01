@@ -62,7 +62,7 @@ function App() {
     };
   }, [user]);
   return (
-    <ThemeProvider defaultTheme="system" storageKey="campusfind-ui-theme">
+    <ThemeProvider defaultTheme="light" storageKey="campusfind-ui-theme">
       <div className="min-h-screen transition-colors duration-300 font-sans">
         <BrowserRouter>
           <Routes>
