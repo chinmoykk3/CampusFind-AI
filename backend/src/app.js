@@ -131,12 +131,15 @@ app.use((req, res) => {
 app.use((error, req, res, next) => {
   console.error("Unhandled error:", error);
 
-  res.status(error.statusCode || 500).json({
+  const statusCode = error.statusCode || 500;
+  const isProd = env.nodeEnv === "production";
+  const message = isProd && statusCode === 500
+    ? "Internal server error"
+    : error.message;
+
+  res.status(statusCode).json({
     success: false,
-    message:
-      env.nodeEnv === "production"
-        ? "Internal server error"
-        : error.message,
+    message,
   });
 });
 
